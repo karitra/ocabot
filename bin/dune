@@ -1,0 +1,4 @@
+(executable
+ (name ocabot)
+ (libraries core cohttp-lwt-unix)
+ (preprocess (pps ppx_jane)))
