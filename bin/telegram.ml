@@ -28,3 +28,32 @@ let post_message ~config ~message =
         >>= fun (_, body) -> Cohttp_lwt.Body.to_string body
         >|= fun _ -> ()
       )
+
+
+(* TODO: WIP *)
+let get_command_updates ~config ~urls =
+  let compose_udpate_uri endpoint timeout offset =
+    let get_update_uri = Printf.sprintf "%s/getUpdate" endpoint
+    in
+    let url = Uri.of_string get_update_uri
+    in
+      Uri.add_query_params' url [
+        ("timeout", Int.to_string timeout);
+        ("offset", Int.to_string offset)
+      ]
+  in
+  let request_uri off = compose_udpate_uri
+    config.Config.endpoint
+    config.Config.update_check_interval_seconds
+    off
+  in
+  let rec subscribe offset =
+    Lwt.Infix.(
+      Client.get (request_uri offset)
+      >>= fun (_, body) -> Cohttp_lwt.Body.drain_body body
+      >>= (fun _ -> Lwt_io.printl "done")
+      >>= (fun () -> post_message ~config ~message:(String.concat "," urls))
+      >>= (fun () -> subscribe (offset + 1))
+    )
+  in
+    subscribe 0
